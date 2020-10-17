@@ -14,7 +14,7 @@ void displayhelpinfo();
 int main (int argc, char **argv)
 {
   int opt;           // Used for command line options
-  int totalchildren; // Number of child processes to run
+  int maxchildren;   // Number of child processes to run at one time
   char logfile[20];  // Logfile to write to
   int runtime;       // Max runtime of application
 
@@ -30,7 +30,7 @@ int main (int argc, char **argv)
         break;
       case 'c': // Specify number of child processes to be ran
         cflag = 1;
-        totalchildren = atoi(optarg);
+        maxchildren = atoi(optarg);
         break;
       case 'l': // Specify name of logfile to write to
         lflag = 1;
@@ -46,7 +46,18 @@ int main (int argc, char **argv)
     }
   }
 
-  printf("totalchildren: %i\n", totalchildren);
+  // Set default values if none specified in command line
+  maxchildren = cflag ? maxchildren : 5;
+  runtime = tflag ? runtime : 20;
+  if (!lflag) strcpy(logfile, "output.log");
+
+  // Enforce hard limits on options
+  maxchildren = maxchildren > 10 ? 10 : maxchildren;
+  maxchildren = maxchildren > 0 ? maxchildren : 5;
+  runtime = runtime > 120 ? 120 : runtime;
+  runtime = runtime > 0 ? runtime : 20;
+
+  printf("maxchildren %i\n", maxchildren);
   printf("logfile: %s\n", logfile);
   printf("runtime: %i\n", runtime);
 
