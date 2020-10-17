@@ -4,21 +4,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
 void displayhelpinfo();
 
+#define MAX_PROC 100
+
+struct msgbuf {
+  long mtype;
+  char mtext[100];
+};
+
 int main (int argc, char **argv)
 {
-  int opt;           // Used for command line options
-  int maxchildren;   // Number of child processes to run at one time
+  int childcnt = 0;  // Counter for running children
+  key_t key;         // Key to use in creation of message queue
   char logfile[20];  // Logfile to write to
+  int maxchildren;   // Number of child processes to run at one time
+  struct msgbuf buf; // Struct used for message queue
+  int msgid;         // ID for allocated message queue
+  int opt;           // Used for command line options
+  int proccnt = 0;   // Counter for number of children ran
   int runtime;       // Max runtime of application
 
   int cflag = 0, lflag = 0, tflag = 0; // Flags for command line options
+
+  system("touch msgq.txt");
   
   while ((opt = getopt(argc, argv, "hc:l:t:")) != -1)
   {
@@ -60,6 +73,10 @@ int main (int argc, char **argv)
   printf("maxchildren %i\n", maxchildren);
   printf("logfile: %s\n", logfile);
   printf("runtime: %i\n", runtime);
+
+
+  // Remove dummy txt file used to create key with ftok
+  system("rm msgq.txt");
 
   return 0;
 }
