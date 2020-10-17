@@ -31,6 +31,7 @@ int main (int argc, char **argv)
 
   int cflag = 0, lflag = 0, tflag = 0; // Flags for command line options
 
+  // Create dummy txt file to create a key with ftok
   system("touch msgq.txt");
   
   while ((opt = getopt(argc, argv, "hc:l:t:")) != -1)
@@ -70,10 +71,27 @@ int main (int argc, char **argv)
   runtime = runtime > 120 ? 120 : runtime;
   runtime = runtime > 0 ? runtime : 20;
 
-  printf("maxchildren %i\n", maxchildren);
-  printf("logfile: %s\n", logfile);
-  printf("runtime: %i\n", runtime);
 
+  // Create key to allocate message queue
+  if ((key = ftok("msgq.txt", 'B')) == -1)
+  {
+    perror("ftok");
+    exit(1);
+  }
+
+  // Allocate message queue and store returned ID
+  if ((msgid = msgget(key, 0664 | IPC_CREAT)) == -1)
+  {
+    perror("msgget: ");
+    exit(1);
+  }
+
+  // Remove message queue
+  if (msgctl(msgid, IPC_RMID, NULL) == -1)
+  {
+    perror("msgctl: ");
+    exit(1);
+  }
 
   // Remove dummy txt file used to create key with ftok
   system("rm msgq.txt");
