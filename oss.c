@@ -31,6 +31,10 @@ int main (int argc, char **argv)
 
   int cflag = 0, lflag = 0, tflag = 0; // Flags for command line options
 
+  // TODO: Implement shared clock - ensure children can see/modify the values
+  //       -- 'periodicasterick.c' pg. 318 in textbook (example)
+  //       -- One int for 'seconds' one int for 'nanoseconds'
+
   // Create dummy txt file to create a key with ftok
   system("touch msgq.txt");
   
@@ -85,6 +89,15 @@ int main (int argc, char **argv)
     perror("msgget: ");
     exit(1);
   }
+
+
+
+  // TODO: MESSAGE QUEUE
+  //        - Simple test that parent/child can communicate with queue
+  //        - Implement a Critical Section and have parent/child alternate modifying one of the values
+
+
+  /* * * CLEAN UP * * */
 
   // Remove message queue
   if (msgctl(msgid, IPC_RMID, NULL) == -1)
