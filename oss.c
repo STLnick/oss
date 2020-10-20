@@ -11,6 +11,7 @@
 void displayhelpinfo();
 
 #define MAX_PROC 100
+#define PERMS 0644
 
 struct msgbuf {
   long mtype;
@@ -20,7 +21,9 @@ struct msgbuf {
 int main (int argc, char **argv)
 {
   int childcnt = 0;  // Counter for running children
+  int childpid;      // Used to determine if parent or child
   key_t key;         // Key to use in creation of message queue
+  int len;           // Holds length of message sent into queue
   char logfile[20];  // Logfile to write to
   int maxchildren;   // Number of child processes to run at one time
   struct msgbuf buf; // Struct used for message queue
@@ -83,8 +86,10 @@ int main (int argc, char **argv)
     exit(1);
   }
 
+  printf("oss.c created key: %i", key);
+
   // Allocate message queue and store returned ID
-  if ((msgid = msgget(key, 0664 | IPC_CREAT)) == -1)
+  if ((msgid = msgget(key, PERMS | IPC_CREAT)) == -1)
   {
     perror("msgget: ");
     exit(1);
@@ -96,6 +101,39 @@ int main (int argc, char **argv)
   //        - Simple test that parent/child can communicate with queue
   //        - Implement a Critical Section and have parent/child alternate modifying one of the values
 
+  // TESTING with a hard coded string to send to child process
+  buf.mtype = 1;
+
+  strcpy(buf.mtext, "testing");
+  len = strlen(buf.mtext);
+
+  if (msgsnd(msgid, &buf, len+1, 0) == -1)
+    perror("msgsnd:");
+
+  printf("Message sent!\n");
+
+
+  /* * * FORK TO CHILD * * */
+
+  if ((childpid = fork()) == -1)
+  {
+    perror("fork failed\n");
+    exit(1);
+  }
+
+  // Child Code
+  if (childpid == 0)
+  {
+    execv("./user");
+    perror("Child failed to execv\n");
+  }
+
+  // Parent Code
+  if (childpid > 0)
+  {
+    wait(childpid);
+    printf("Parent waited for %i to finish!\n", childpid);
+  }
 
   /* * * CLEAN UP * * */
 
