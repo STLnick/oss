@@ -78,6 +78,7 @@ int main (int argc, char **argv)
   runtime = runtime > 120 ? 120 : runtime;
   runtime = runtime > 0 ? runtime : 20;
 
+  /* * * MESSAGE QUEUE SETUP * * */
 
   // Create key to allocate message queue
   if ((key = ftok("msgq.txt", 'B')) == -1)
@@ -85,8 +86,6 @@ int main (int argc, char **argv)
     perror("ftok");
     exit(1);
   }
-
-  printf("oss.c created key: %i", key);
 
   // Allocate message queue and store returned ID
   if ((msgid = msgget(key, PERMS | IPC_CREAT)) == -1)
@@ -96,9 +95,7 @@ int main (int argc, char **argv)
   }
 
 
-
   // TODO: MESSAGE QUEUE
-  //        - Simple test that parent/child can communicate with queue
   //        - Implement a Critical Section and have parent/child alternate modifying one of the values
 
   // TESTING with a hard coded string to send to child process
@@ -109,8 +106,6 @@ int main (int argc, char **argv)
 
   if (msgsnd(msgid, &buf, len+1, 0) == -1)
     perror("msgsnd:");
-
-  printf("Message sent!\n");
 
 
   /* * * FORK TO CHILD * * */
