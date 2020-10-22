@@ -204,7 +204,16 @@ int main (int argc, char **argv)
   // Child Code
   if (childpid == 0)
   {
-    char *args[] = {"./user", '\0'};
+    char strclocksecid[100+1] = {'\0'}; // Create string from shared memory clock seconds id
+    sprintf(strclocksecid, "%d", clocksecid); 
+
+    char strclocknanoid[100+1] = {'\0'}; // Create string from shared memory clock nanoseconds id
+    sprintf(strclocknanoid, "%d", clocknanoid); 
+
+    char strshmpidid[100+1] = {'\0'}; // Create string from shared memory pid id
+    sprintf(strshmpidid, "%d", shmpidid); 
+
+    char *args[] = {"./user", strclocksecid, strclocknanoid, strshmpidid, '\0'};
 
     execv(args[0], args);
     perror("Child failed to execv\n");
@@ -215,6 +224,7 @@ int main (int argc, char **argv)
   {
     wait(&status);
     printf("Parent waited for child! Exit status: %i\n", status);
+    printf("shmpid after wait(): %i", *shmpid);
   }
 
   /* * * CLEAN UP * * */
