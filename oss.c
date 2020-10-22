@@ -11,6 +11,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+int detachandremove(int shmid, void *shmaddr);
 void displayhelpinfo();
 
 #define MAX_PROC 100
@@ -25,10 +26,10 @@ int main (int argc, char **argv)
 {
   int childcnt = 0;   // Counter for running children
   int childpid;       // Used to determine if parent or child
-  int clocknano;      // Shared memory clock nanoseconds
+  int *clocknano;     // Shared memory clock nanoseconds
   int clocknanoid;    // ID for shared memory clock nanoseconds
   key_t clocknanokey; // Key to use in creation of nanoseconds shared memory
-  int clocksec;       // Shared memory clock seconds
+  int *clocksec;      // Shared memory clock seconds
   int clocksecid;     // ID for shared memory clock seconds
   key_t clockseckey;  // Key to use in creation of seconds shared memory
   int len;            // Holds length of message sent into queue
@@ -40,7 +41,7 @@ int main (int argc, char **argv)
   int opt;            // Used for command line options
   int proccnt = 0;    // Counter for number of children ran
   int runtime;        // Max runtime of application
-  int shmpid;         // Shared memory pid
+  int *shmpid;        // Shared memory pid
   int shmpidid;       // ID for shared memory pid
   key_t shmpidkey;    // Key to use in creation of shared memory pid segment
   int status;         // Int indicating termination status of a child process
@@ -93,6 +94,7 @@ int main (int argc, char **argv)
 
   /* * * SHARED MEMORY SETUP * * */
 
+  /* KEYS */
   // Create key to allocate shared memory clock seconds segment
   if ((clockseckey = ftok("msgq.txt", 'A')) == -1)
   {
@@ -114,31 +116,54 @@ int main (int argc, char **argv)
     exit(1);
   }
 
-  
+  /* IDS */
   if ((clocksecid = shmget(clockseckey, sizeof(int *), IPC_CREAT | 0660)) == -1)
   {
     perror("Failed to create shared memory segment.");
     return 1;
   }
 
-  printf("Successfully created clocksec shared memory! id: %i\n", clocksecid);
-
   if ((clocknanoid = shmget(clocknanokey, sizeof(int *), IPC_CREAT | 0660)) == -1)
   {
     perror("Failed to create shared memory segment.");
     return 1;
   }
-  printf("Successfully created clocknano shared memory! id: %i\n", clocknanoid);
 
   if ((shmpidid = shmget(shmpidkey, sizeof(int *), IPC_CREAT | 0660)) == -1)
   {
     perror("Failed to create shared memory segment.");
     return 1;
   }
-  printf("Successfully created shmpid shared memory! id: %i\n", shmpidid);
 
+  /* ATTACH */
+  if ((clocksec = (int *) shmat(clocksecid, NULL, 0)) == (void *) - 1)
+  {
+    perror("Failed to attach shared memory segment.");
+    if (shmctl(clocksecid, IPC_RMID, NULL) == -1)
+      perror("Failed to remove memory segment.");
+    return 1;
+  }
+  printf("Successfully attached to clocksec shared memory!\n");
 
-  /* * * MESSAGE QUEUE SETUP * * */
+  if ((clocknano = (int *) shmat(clocknanoid, NULL, 0)) == (void *) - 1)
+  {
+    perror("Failed to attach shared memory segment.");
+    if (shmctl(clocknanoid, IPC_RMID, NULL) == -1)
+      perror("Failed to remove memory segment.");
+    return 1;
+  }
+  printf("Successfully attached to clocknano shared memory!\n");
+
+  if ((shmpid = (int *) shmat(shmpidid, NULL, 0)) == (void *) - 1)
+  {
+    perror("Failed to attach shared memory segment.");
+    if (shmctl(shmpidid, IPC_RMID, NULL) == -1)
+      perror("Failed to remove memory segment.");
+    return 1;
+  }
+  printf("Successfully attached to shmpid shared memory!\n");
+  
+   /* * * MESSAGE QUEUE SETUP * * */
 
   // Create key to allocate message queue
   if ((msgkey = ftok("msgq.txt", 'B')) == -1)
@@ -201,6 +226,11 @@ int main (int argc, char **argv)
     exit(1);
   }
 
+  // Detach from and remove all shared memory segments
+  detachandremove(clocksecid, clocksec);
+  detachandremove(clocknanoid, clocknano);
+  detachandremove(shmpidid, shmpid);
+
   // Remove dummy txt file used to create key with ftok
   system("rm msgq.txt");
 
@@ -229,4 +259,22 @@ void displayhelpinfo()
   printf("NOTE: Any Negative values passed will be set to these default values\n");
   printf("      Any excessive values will be set to a ceiling value.\n");
   printf("-------------------------\n\n");
+}
+
+int detachandremove(int shmid, void *shmaddr)
+{
+  int error = 0;
+
+  if (shmdt(shmaddr) == -1)
+    error = errno;
+  if ((shmctl(shmid, IPC_RMID, NULL) == -1) && !error)
+    error = errno;
+  if (!error)
+  {
+    printf("Successfully detached and removed the shared memory segment - id: %d\n", shmid);
+    return 0;
+  }
+  errno = error;
+  perror("Error: ");
+  return -1;
 }
