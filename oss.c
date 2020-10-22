@@ -213,7 +213,7 @@ int main (int argc, char **argv)
     char strshmpidid[100+1] = {'\0'}; // Create string from shared memory pid id
     sprintf(strshmpidid, "%d", shmpidid); 
 
-    char *args[] = {"./user", strclocksecid, strclocknanoid, strshmpidid, '\0'};
+    char *args[5] = {"./user", strclocksecid, strclocknanoid, strshmpidid, '\0'};
 
     execv(args[0], args);
     perror("Child failed to execv\n");
@@ -224,7 +224,7 @@ int main (int argc, char **argv)
   {
     wait(&status);
     printf("Parent waited for child! Exit status: %i\n", status);
-    printf("shmpid after wait(): %i", *shmpid);
+    printf("shmpid after wait(): %i\n", *shmpid);
   }
 
   /* * * CLEAN UP * * */
