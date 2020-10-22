@@ -4,9 +4,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
+#include <sys/shm.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 void displayhelpinfo();
 
@@ -20,17 +23,27 @@ struct msgbuf {
 
 int main (int argc, char **argv)
 {
-  int childcnt = 0;  // Counter for running children
-  int childpid;      // Used to determine if parent or child
-  key_t key;         // Key to use in creation of message queue
-  int len;           // Holds length of message sent into queue
-  char logfile[20];  // Logfile to write to
-  int maxchildren;   // Number of child processes to run at one time
-  struct msgbuf buf; // Struct used for message queue
-  int msgid;         // ID for allocated message queue
-  int opt;           // Used for command line options
-  int proccnt = 0;   // Counter for number of children ran
-  int runtime;       // Max runtime of application
+  int childcnt = 0;   // Counter for running children
+  int childpid;       // Used to determine if parent or child
+  int clocknano;      // Shared memory clock nanoseconds
+  int clocknanoid;    // ID for shared memory clock nanoseconds
+  key_t clocknanokey; // Key to use in creation of nanoseconds shared memory
+  int clocksec;       // Shared memory clock seconds
+  int clocksecid;     // ID for shared memory clock seconds
+  key_t clockseckey;  // Key to use in creation of seconds shared memory
+  int len;            // Holds length of message sent into queue
+  char logfile[20];   // Logfile to write to
+  int maxchildren;    // Number of child processes to run at one time
+  struct msgbuf buf;  // Struct used for message queue
+  int msgid;          // ID for allocated message queue
+  key_t msgkey;       // Key to use in creation of message queue
+  int opt;            // Used for command line options
+  int proccnt = 0;    // Counter for number of children ran
+  int runtime;        // Max runtime of application
+  int shmpid;         // Shared memory pid
+  int shmpidid;       // ID for shared memory pid
+  key_t shmpidkey;    // Key to use in creation of shared memory pid segment
+  int status;         // Int indicating termination status of a child process
 
   int cflag = 0, lflag = 0, tflag = 0; // Flags for command line options
 
@@ -78,17 +91,64 @@ int main (int argc, char **argv)
   runtime = runtime > 120 ? 120 : runtime;
   runtime = runtime > 0 ? runtime : 20;
 
+  /* * * SHARED MEMORY SETUP * * */
+
+  // Create key to allocate shared memory clock seconds segment
+  if ((clockseckey = ftok("msgq.txt", 'A')) == -1)
+  {
+    perror("ftok");
+    exit(1);
+  }
+
+  // Create key to allocate shared memory clock nanoseconds segment
+  if ((clocknanokey = ftok("msgq.txt", 'C')) == -1)
+  {
+    perror("ftok");
+    exit(1);
+  }
+
+  // Create key to allocate shared memory pid segment
+  if ((shmpidkey = ftok("msgq.txt", 'D')) == -1)
+  {
+    perror("ftok");
+    exit(1);
+  }
+
+  
+  if ((clocksecid = shmget(clockseckey, sizeof(int *), IPC_CREAT | 0660)) == -1)
+  {
+    perror("Failed to create shared memory segment.");
+    return 1;
+  }
+
+  printf("Successfully created clocksec shared memory! id: %i\n", clocksecid);
+
+  if ((clocknanoid = shmget(clocknanokey, sizeof(int *), IPC_CREAT | 0660)) == -1)
+  {
+    perror("Failed to create shared memory segment.");
+    return 1;
+  }
+  printf("Successfully created clocknano shared memory! id: %i\n", clocknanoid);
+
+  if ((shmpidid = shmget(shmpidkey, sizeof(int *), IPC_CREAT | 0660)) == -1)
+  {
+    perror("Failed to create shared memory segment.");
+    return 1;
+  }
+  printf("Successfully created shmpid shared memory! id: %i\n", shmpidid);
+
+
   /* * * MESSAGE QUEUE SETUP * * */
 
   // Create key to allocate message queue
-  if ((key = ftok("msgq.txt", 'B')) == -1)
+  if ((msgkey = ftok("msgq.txt", 'B')) == -1)
   {
     perror("ftok");
     exit(1);
   }
 
   // Allocate message queue and store returned ID
-  if ((msgid = msgget(key, PERMS | IPC_CREAT)) == -1)
+  if ((msgid = msgget(msgkey, PERMS | IPC_CREAT)) == -1)
   {
     perror("msgget: ");
     exit(1);
@@ -119,15 +179,17 @@ int main (int argc, char **argv)
   // Child Code
   if (childpid == 0)
   {
-    execv("./user");
+    char *args[] = {"./user", '\0'};
+
+    execv(args[0], args);
     perror("Child failed to execv\n");
   }
 
   // Parent Code
   if (childpid > 0)
   {
-    wait(childpid);
-    printf("Parent waited for %i to finish!\n", childpid);
+    wait(&status);
+    printf("Parent waited for child! Exit status: %i\n", status);
   }
 
   /* * * CLEAN UP * * */
