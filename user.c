@@ -10,6 +10,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+int detach(int shmid, void *shmaddr);
+
 #define PERMS 0644
 
 struct msgbuf {
@@ -80,5 +82,27 @@ int main (int argc, char **argv)
 
   printf("recvd: '%s' \n", buf.mtext);
 
+  /* * CLEAN UP * */
+  // Detach from all shared memory segments
+  detach(clocksecid, clocksec);
+  detach(clocknanoid, clocknano);
+  detach(shmpidid, shmpid);
+
   return 0;
+}
+
+int detach(int shmid, void *shmaddr)
+{
+  int error = 0;
+
+  if (shmdt(shmaddr) == -1)
+    error = errno;
+  if (!error)
+  {
+    printf("CHILD: Successfully detached from the shared memory segment - id: %d\n", shmid);
+    return 0;
+  }
+  errno = error;
+  perror("Error: ");
+  return -1;
 }
