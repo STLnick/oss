@@ -29,16 +29,16 @@ int main (int argc, char **argv)
   int msgid;                       // ID for message queue
   key_t msgkey;                    // Key for message queue
   int runtime;                     // Simulated amount of time child should run before terminating
+  int shouldrun = 1;               // Flag for this child to continue to run
   int *shmpid;                     // ID for shared memory pid segment
   int shmpidid = atoi(argv[3]);    // Shared memory segment for pid
-
+  int targettime;                  // Time at which child should attempt to terminate
 
   // TODO: Read shared memory clock
 
 
   // TODO: Generate random number to represent runtime in nanoseconds for child between 1-1,000,000
   runtime = (rand() % 1000000) + 1;
-  printf("Testing rand() num: %i\n", runtime);
 
   // TODO: To enter Critical Section - there should be a message in queue, receive the message and enter
 
@@ -47,7 +47,7 @@ int main (int argc, char **argv)
   //           -- If it has: Check 'shmpid' if it is '0' then place its pid inside ELSE loop until 'shmpid' is '0'
 
 
-
+  /* * MESSAGE QUEUE * */
   // Retrieve key established in oss.c
   if ((msgkey = ftok("msgq.txt", 'B')) == -1)
   {
@@ -81,8 +81,10 @@ int main (int argc, char **argv)
     return 1;
   }
 
-  // IF time expired AND shmpid is currently 0
-  // *shmpid = getpid();
+  // Read shared clock and set target time to terminate
+  targettime = runtime + *clocknano;
+
+
 
   // Receive a message from the queue
   if(msgrcv(msgid, &buf, sizeof(buf.mtext), 0, 0) == -1)
@@ -91,9 +93,16 @@ int main (int argc, char **argv)
     exit(1);
   }
 
-  printf("recvd: '%s' \n", buf.mtext);
-
-
+  while (shouldrun)
+  {
+    
+    // If child has run for specified runtime and shmpid has no pid in it currently
+    if(*clocknano >= targettime && *shmpid == 0)
+    {
+      shouldrun = 0;      // Set flag to stop loop
+      *shmpid = getpid(); // Set shared pid to this pid about to terminate
+    }
+  }
 
 
   /* * CLEAN UP * */
