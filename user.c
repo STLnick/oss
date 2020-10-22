@@ -31,10 +31,18 @@ int main (int argc, char **argv)
   int *shmpid;
   int shmpidid = atoi(argv[3]);
 
-  // TESTING argv
-  printf("argv[1] clocksecid: %i\n", clocksecid);
-  printf("argv[2] clocknanoid: %i\n", clocknanoid);
-  printf("argv[3] shmpidid: %i\n", shmpidid);
+
+
+  // TODO: Read shared memory clock
+
+  // TODO: Generate random number to represent runtime in nanoseconds for child between 1-1,000,000
+
+  // TODO: To enter Critical Section - there should be a message in queue, receive the message and enter
+
+  // TODO: Loop in Critical Section checking Shared Clock to see if it has exceeded it's run time
+  //           -- If it has: Check 'shmpid' if it is '0' then place its pid inside ELSE loop until 'shmpid' is '0'
+
+
 
   // Retrieve key established in oss.c
   if ((msgkey = ftok("msgq.txt", 'B')) == -1)

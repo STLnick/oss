@@ -189,11 +189,31 @@ int main (int argc, char **argv)
   strcpy(buf.mtext, "testing");
   len = strlen(buf.mtext);
 
+  // Sending initial message to queue before beginning forks
   if (msgsnd(msgid, &buf, len+1, 0) == -1)
     perror("msgsnd:");
 
 
   /* * * FORK TO CHILD * * */
+
+  // TODO: Create loop to fork children
+  //
+  // TODO: Write to logfile each time a child is created using the clock time as well
+  //       -> "Master: Creating new child pid xxx at my time xx.xx"
+  //       -- Replace xxx with actual childpid and xx.xx with shared clock seconds and nanoseconds
+  //
+  // TODO: Each loop 
+  //       - Increment the shared clock by the determined amount
+  //       - Check if 'shmpid' is set by a child
+  //         IF SO
+  //          1. Write to logfile "Master: Child pid xxx is terminating at system clock time xx.xx"
+  //          2. Place a message into the message queue again
+  //          3. Decrement 'childcnt' by one
+  //          4. Fork another child
+  //          5. Increment 'childcnt' by one
+
+
+
 
   if ((childpid = fork()) == -1)
   {
