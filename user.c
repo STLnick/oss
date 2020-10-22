@@ -21,23 +21,27 @@ struct msgbuf {
 
 int main (int argc, char **argv)
 {
-  int *clocknano;
-  int clocknanoid = atoi(argv[2]);
-  int *clocksec;
-  int clocksecid = atoi(argv[1]);
-  struct msgbuf buf;
-  int msgid;
-  key_t msgkey;
-  int *shmpid;
-  int shmpidid = atoi(argv[3]);
-
+  int *clocknano;                  // Shared memory segment for clock nanoseconds
+  int clocknanoid = atoi(argv[2]); // ID for shared memory clock nanoseconds segment
+  int *clocksec;                   // Shared memory segment for clock seconds
+  int clocksecid = atoi(argv[1]);  // ID for shared memory clock seconds segment
+  struct msgbuf buf;               // Struct for message queue
+  int msgid;                       // ID for message queue
+  key_t msgkey;                    // Key for message queue
+  int runtime;                     // Simulated amount of time child should run before terminating
+  int *shmpid;                     // ID for shared memory pid segment
+  int shmpidid = atoi(argv[3]);    // Shared memory segment for pid
 
 
   // TODO: Read shared memory clock
 
+
   // TODO: Generate random number to represent runtime in nanoseconds for child between 1-1,000,000
+  runtime = (rand() % 1000000) + 1;
+  printf("Testing rand() num: %i\n", runtime);
 
   // TODO: To enter Critical Section - there should be a message in queue, receive the message and enter
+
 
   // TODO: Loop in Critical Section checking Shared Clock to see if it has exceeded it's run time
   //           -- If it has: Check 'shmpid' if it is '0' then place its pid inside ELSE loop until 'shmpid' is '0'
@@ -77,9 +81,8 @@ int main (int argc, char **argv)
     return 1;
   }
 
-  // TESTING
-  printf("CHILD: pid %i\n", getpid());
-  *shmpid = getpid();
+  // IF time expired AND shmpid is currently 0
+  // *shmpid = getpid();
 
   // Receive a message from the queue
   if(msgrcv(msgid, &buf, sizeof(buf.mtext), 0, 0) == -1)
@@ -89,6 +92,9 @@ int main (int argc, char **argv)
   }
 
   printf("recvd: '%s' \n", buf.mtext);
+
+
+
 
   /* * CLEAN UP * */
   // Detach from all shared memory segments
