@@ -59,9 +59,82 @@ What Doesn't Work:
 
 
 Uncertainties:
-
+- Issue causing forked processes to not end correctly
+- With previous stated issue, not sure if children are waiting for a message to appear in queue before moving on
 
 
 Commit Log:
 (All commits also on GitHub: https://github.com/STLnick/oss)
+
+Commits on Oct 25, 2020
+
+💬 Add warning to -h flag for program to notify user of issues
+nicholas ray committed 3 minutes ago
+
+📝 Update README with what works/doesn't work and a NOTICE
+nicholas ray
+nicholas ray committed 14 minutes ago
+
+💩 Attempt to implement fork/exec/wait loop without success
+nicholas ray committed 14 minutes ago
+
+Commits on Oct 22, 2020
+
+🚧 Determine target time to stop exe and setup structure of loopp
+nicholas ray committed 3 days ago
+
+🚧 Generate a random number for simulated child runtime
+nicholas ray committed 3 days ago
+
+💡 Add TODOs for next implementation steps
+nicholas ray committed 3 days ago
+
+🎨 Detach from shared memory at end of file
+nicholas ray committed 3 days ago
+
+✨ Attach child to shared memory and store its pid then read it from pparent
+nicholas ray committed 3 days ago
+
+🚧 Pass shared memory ids as args to user in execv
+nicholas ray committed 3 days ago
+
+🚧 Attach to and then detach and remove shared memory segments
+nicholas ray committed 3 days ago
+
+🚧 Allocate shared memory for clock ints and pid
+nicholas ray committed 3 days ago
+
+Commits on Oct 20, 2020
+
+🔥 Remove testing console.logs and unused msgctl in user.c
+nicholas ray committed 5 days ago
+
+🚧 Implement message queue send/receive with one basic string using fork
+nicholas ray committed 5 days ago
+
+Commits on Oct 17, 2020
+
+📝 Start README with basic info and structure for later additions
+nicholas ray committed 8 days ago
+
+💡 Add TODOs for next implementation steps
+nicholas ray committed 8 days ago
+
+🚧 Allocate and remove a message queue successfully
+nicholas ray committed 8 days ago
+
+🚧 Add most variables that will be needed and txt file for key creation
+nicholas ray committed 8 days ago
+
+✨ Enforce default values and limits on command line args for variables
+nicholas ray committed 8 days ago
+
+🚧 Parse command line options into needed variables
+nicholas ray committed 8 days ago
+
+Add _XOPEN_SOURCE_ to remove compiler warning
+nicholas ray committed 8 days ago
+
+🎉 Initial commit for OSS project
+nicholas ray committed 8 days ago
 
