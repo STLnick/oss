@@ -4,6 +4,17 @@ Operating System Simulator
 Version Control:
 GitHub repo: https://github.com/STLnick/oss
 
+******** NOTICE ********
+
+This program does not execute properly! I ran into issues and quite frankly dropped the ball on consistently working on this project to remedy them in time. After the extension and past it I became more complacent. 
+
+This program will flood the server with processes (hence why I emailed you Mark on removing them)!
+
+I'm simply documenting and submitting this, even mulitple days late, to give myself peace of mind. And to potentially get a scrap or two of points instead of a 0 on this project.
+
+************************
+
+
 To run the program:
 First run 'make' to build 'oss' and 'user'
 
@@ -34,11 +45,17 @@ Default value information:
 
 
 What Works:
-
+- Makefile
+- Parsing command line options and enforcing sensible values/defaults
+- Sending and Receiving a message in queue between oss.c and user.c
 
 
 What Doesn't Work:
-
+- Fork crashes program and spins off too many processes without ending them properly
+- Program timer is not setup to stop execution after time elapsed
+- oss.c does not write to logfile
+- user.c generates a random runtime for itself but does not enfoce it properly i.e. user never terminates
+- Signal handling is not implemented
 
 
 Uncertainties:
