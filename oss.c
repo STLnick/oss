@@ -14,6 +14,7 @@
 int detachandremove(int shmid, void *shmaddr);
 void displayhelpinfo();
 
+#define CLOCK_INC 500000
 #define MAX_PROC 100
 #define PERMS 0644
 
@@ -162,6 +163,7 @@ int main (int argc, char **argv)
     return 1;
   }
   printf("Successfully attached to shmpid shared memory!\n");
+  *shmpid = 0; // Initialize shared pid to 0 to indicate no process terminating
   
    /* * * MESSAGE QUEUE SETUP * * */
 
@@ -179,13 +181,7 @@ int main (int argc, char **argv)
     exit(1);
   }
 
-
-  // TODO: MESSAGE QUEUE
-  //        - Implement a Critical Section and have parent/child alternate modifying one of the values
-
-  // TESTING with a hard coded string to send to child process
   buf.mtype = 1;
-
   strcpy(buf.mtext, "testing");
   len = strlen(buf.mtext);
 
@@ -196,56 +192,94 @@ int main (int argc, char **argv)
 
   /* * * FORK TO CHILD * * */
 
-  // TODO: Create loop to fork children
-  //
-  // TODO: Write to logfile each time a child is created using the clock time as well
-  //       -> "Master: Creating new child pid xxx at my time xx.xx"
-  //       -- Replace xxx with actual childpid and xx.xx with shared clock seconds and nanoseconds
-  //
-  // TODO: Each loop 
-  //       - Increment the shared clock by the determined amount
-  //       - Check if 'shmpid' is set by a child
-  //         IF SO
-  //          1. Write to logfile "Master: Child pid xxx is terminating at system clock time xx.xx"
-  //          2. Place a message into the message queue again
-  //          3. Decrement 'childcnt' by one
-  //          4. Fork another child
-  //          5. Increment 'childcnt' by one
+  // Setup custom argv for exec-ing children
+  char strclocksecid[100+1] = {'\0'}; // Create string from shared memory clock seconds id
+  sprintf(strclocksecid, "%d", clocksecid); 
+
+  char strclocknanoid[100+1] = {'\0'}; // Create string from shared memory clock nanoseconds id
+  sprintf(strclocknanoid, "%d", clocknanoid); 
+
+  char strshmpidid[100+1] = {'\0'}; // Create string from shared memory pid id
+  sprintf(strshmpidid, "%d", shmpidid); 
+
+  char *args[5] = {"./user", strclocksecid, strclocknanoid, strshmpidid, '\0'};
 
 
-
-
-  if ((childpid = fork()) == -1)
+  // Fork initial children processes
+  int i;
+  for (i = 0; i < maxchildren; i++)
   {
-    perror("fork failed\n");
-    exit(1);
+    if ((childpid = fork()) == -1)
+    {
+      perror("fork failed\n");
+      exit(1);
+    }
+
+    childcnt++;
+
+    // Child Code
+    if (childpid == 0)
+    {
+      execv(args[0], args);
+      perror("Child failed to execv\n");
+    }
   }
 
-  // Child Code
-  if (childpid == 0)
+
+  /* * CRITICAL SECTION LOOP * */
+  while (*clocknano < 2000000000)
   {
-    char strclocksecid[100+1] = {'\0'}; // Create string from shared memory clock seconds id
-    sprintf(strclocksecid, "%d", clocksecid); 
+    // Increment clock
+    *clocknano = *clocknano + CLOCK_INC;
 
-    char strclocknanoid[100+1] = {'\0'}; // Create string from shared memory clock nanoseconds id
-    sprintf(strclocknanoid, "%d", clocknanoid); 
+    // Check if a child terminated by checking shmpid
+    if (*shmpid > 0)
+    {
+      // Increment counter for child processes ran
+      proccnt++;
 
-    char strshmpidid[100+1] = {'\0'}; // Create string from shared memory pid id
-    sprintf(strshmpidid, "%d", shmpidid); 
+      // TODO: Write to logfile "Master: Child pid xxx is terminating at system clock time xx.xx"
+      printf("Child pid %i terminated\n", *shmpid);
 
-    char *args[5] = {"./user", strclocksecid, strclocknanoid, strshmpidid, '\0'};
+      // Reset shmpid to 0
+      *shmpid = 0;
 
-    execv(args[0], args);
-    perror("Child failed to execv\n");
+      // Place msg in queue
+      if (msgsnd(msgid, &buf, len+1, 0) == -1)
+        perror("msgsnd:");
+     
+      // - decrement childcnt
+      childcnt--;
+
+      // Fork a new child process
+      if ((childpid = fork()) == -1)
+      {
+        perror("fork failed\n");
+        exit(1);
+      }
+
+      // Child Code
+      if (childpid == 0)
+      {
+        execv(args[0], args);
+        perror("Child failed to execv\n");
+      }
+
+      // TODO: Write to logfile "Master: Creating new child pid xxx at my time xx.xx"
+
+      // - increment childcnt
+      childcnt++;
+    }
   }
+
 
   // Parent Code
-  if (childpid > 0)
-  {
-    wait(&status);
-    printf("Parent waited for child! Exit status: %i\n", status);
-    printf("shmpid after wait(): %i\n", *shmpid);
-  }
+  //if (childpid > 0)
+  //{
+    //wait(&status);
+    //printf("Parent waited for child! Exit status: %i\n", status);
+    //printf("shmpid after wait(): %i\n", *shmpid);
+  //}
 
   /* * * CLEAN UP * * */
 
