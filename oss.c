@@ -304,7 +304,12 @@ int main (int argc, char **argv)
 void displayhelpinfo()
 {
   printf("\nOperating System Simulator\n");
-  printf("-------------------------\n");
+  printf("-------------------------\n\n");
+  printf("****** WARNING ******\n");
+  printf("This program does not run correctly!\n");
+  printf("This will spawn too many processes, crash and flood server with processes.\n");
+  printf("More details in README\n");
+  printf("*********************\n\n");
   printf("Example command to run ./oss:\n\n");
   printf("./oss -c 10 -l logfile -t 60\n\n");
   printf("-------------------------\n");
